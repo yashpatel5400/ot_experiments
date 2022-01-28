@@ -33,4 +33,13 @@ G0 = ot.emd(a, b, M)
 
 pl.figure(3, figsize=(5, 5))
 ot.plot.plot1D_mat(a, b, G0, 'OT matrix G0')
-plt.show()
+plt.show
+
+
+lambd = 1e-3
+Gs = ot.sinkhorn(a, b, M, lambd, verbose=True)
+
+pl.figure(4, figsize=(5, 5))
+ot.plot.plot1D_mat(a, b, Gs, 'OT matrix Sinkhorn')
+
+pl.show()
