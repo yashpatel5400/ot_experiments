@@ -15,7 +15,7 @@ state_deltas = [(max_state[i] - min_state[i]) / state_buckets[i] for i in range(
 episodes = 2000
 alpha = 0.1
 epsilon = 0.9
-gamma = 0.9
+gamma = 0.95
 
 Q = np.zeros(state_buckets + [env.action_space.n])
 
