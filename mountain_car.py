@@ -10,6 +10,7 @@ from sklearn.kernel_approximation import RBFSampler
 
 
 discrete = True
+on_policy = True
 
 env = gym.make('MountainCar-v0')
 env.reset()
@@ -50,7 +51,7 @@ epsilon = 0.9
 gamma = 0.95
 
 if discrete:
-    Q = np.zeros(state_buckets + [env.action_space.n])
+    Q = np.random.uniform(low=-2, high=0, size=state_buckets + [env.action_space.n])
 else:
     state = env.reset()
 
@@ -83,9 +84,11 @@ for episode in range(episodes):
 
     episode_reward = 0
     while not done:
-        if episode % 50 == 0:
-            env.render()
+        # if episode % 50 == 0:
+        #     env.render()
 
+        if not on_policy:
+            action = eps_greedy_action(Q, state, epsilon)
         new_state, reward, done, _ = env.step(action)
         new_action = eps_greedy_action(Q, new_state, epsilon)
 
@@ -93,16 +96,27 @@ for episode in range(episodes):
             s1, s2 = discretize_state(state)
             new_s1, new_s2 = discretize_state(new_state)
 
-            td_target = reward + gamma * Q[new_s1, new_s2, new_action] - Q[s1, s2, action]
+            if on_policy:
+                td_target = reward + gamma * Q[new_s1, new_s2, new_action] - Q[s1, s2, action]
+            else:
+                td_target = reward + gamma * np.max(Q[new_s1, new_s2, :]) - Q[s1, s2, action]
+
             Q[s1, s2, action] += alpha * td_target
         else:
             td_target = reward + gamma * Q[new_action].predict([featurize_state(new_state)])
             Q[action] = Q[action].partial_fit([featurize_state(state)], td_target)
 
         state = new_state
-        action = new_action
+        if on_policy:
+            action = new_action
 
         episode_reward += reward
+
+    # possible use
+    # if state[0] >= env.goal_position:
+    #     s1, s2 = discretize_state(state)
+    #     Q[s1, s2, action] = 0
+
     rewards.append(episode_reward)
 
 # final "evaluation" run
