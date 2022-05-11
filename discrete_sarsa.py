@@ -4,6 +4,7 @@ import sklearn
 from sklearn.linear_model import SGDRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.kernel_approximation import RBFSampler
+import matplotlib.pyplot as plt
 
 env = gym.make('CartPole-v0')
 env.reset()
@@ -34,6 +35,7 @@ def eps_greedy(epsilon, state, Q):
 	return np.argmax(Q[s1, s2, s3, s4, :])
 
 Q = np.zeros((num_state_buckets + [env.action_space.n]))
+episode_lens = []
 
 for episode in range(episodes):
 	if episode > 0 and episode % 100 == 0:
@@ -45,10 +47,11 @@ for episode in range(episodes):
 	state = env.reset()
 	action = eps_greedy(eps, state, Q)
 
+	t = 0
 	while not done:
-		if episode % 50 == 0:
-			env.render()
-			
+		# if episode % 50 == 0:
+		# 	env.render()
+
 		new_state, reward, done, _ = env.step(action)
 		new_action = eps_greedy(eps, new_state, Q)
 		
@@ -61,10 +64,17 @@ for episode in range(episodes):
 		
 		state = new_state
 		action = new_action
+		t += 1
+
+	episode_lens.append(t)
 
 # final test
 state = env.reset()
+done = False
 while not done:
 	env.render()
-	state, _, _, _ = env.step(eps_greedy(0, state, Q))
+	state, _, done, _ = env.step(eps_greedy(0, state, Q))
 env.close()
+
+plt.plot(range(len(episode_lens)), episode_lens)
+plt.show()
