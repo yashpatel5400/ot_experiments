@@ -38,17 +38,26 @@ for episode in range(episodes):
 
 		action = eps_greedy_choose(Qs, state, epsilon)
 		new_state, reward, done, info = env.step(action)
-		new_action = eps_greedy_choose(Qs, new_state, epsilon)
+		# new_action = eps_greedy_choose(Qs, new_state, epsilon)
 
-		td_delta = (reward + gamma * Qs[new_action].predict([new_state])) - Qs[action].predict([state])
-		td_target = Qs[action].predict([state]) + alpha * td_delta
-		Qs[action] = Qs[action].partial_fit([state], np.array([td_target]).ravel())
+		# td_delta = (reward + gamma * Qs[new_action].predict([new_state])) - Qs[action].predict([state])
+		# td_target = Qs[action].predict([state]) + alpha * td_delta
+		td_target = reward + gamma * np.max([Qs[a].predict([new_state]) for a in range(env.action_space.n)])
+		Qs[action].partial_fit([state], np.array([td_target]).ravel())
 
 		state = new_state
-		action = new_action
+		# action = new_action
 		t += 1
 
 	episode_lens.append(t)
+
+# final "evaluation" run
+done = False
+state = env.reset()
+while not done:
+    env.render()
+    action = eps_greedy_choose(Qs, state, 0)
+    state, _, done, _ = env.step(action)
 
 plt.plot(range(len(episode_lens)), episode_lens)
 plt.show()
