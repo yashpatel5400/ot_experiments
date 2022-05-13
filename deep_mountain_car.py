@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
-import torchvision.transforms as T
 
 # for continuous (non-discretized) state space
 import sklearn
@@ -17,13 +15,16 @@ from sklearn.linear_model import SGDRegressor
 import sklearn.pipeline
 from sklearn.kernel_approximation import RBFSampler
 
+env = gym.make('MountainCar-v0')
+env.reset()
+
 class DQN(nn.Module):
     def __init__(self):
         super(DQN, self).__init__()
         self.relu = nn.ReLU()
-        self.d1 = nn.Linear(4, 16)
+        self.d1 = nn.Linear(env.observation_space.shape[0], 16)
         self.d2 = nn.Linear(16, 64)
-        self.d3 = nn.Linear(64, 2)
+        self.d3 = nn.Linear(64, env.action_space.n)
 
     def forward(self, x):
         x = torch.from_numpy(x)
@@ -33,12 +34,6 @@ class DQN(nn.Module):
         x = self.relu(x)
         x = self.d3(x)
         return x
-
-discrete = True
-on_policy = True
-
-env = gym.make('CartPole-v0')
-env.reset()
 
 batch_size = 25
 episodes = 1000
@@ -107,7 +102,7 @@ done = False
 state = env.reset()
 while not done:
     env.render()
-    action = eps_greedy_action(state, 0)
+    action = eps_greedy_action(train_model, state, 0)
     state, _, done, _ = env.step(action)
 
 plt.plot(range(len(rewards)), rewards)
