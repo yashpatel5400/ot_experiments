@@ -9,12 +9,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-# for continuous (non-discretized) state space
-import sklearn
-from sklearn.linear_model import SGDRegressor
-import sklearn.pipeline
-from sklearn.kernel_approximation import RBFSampler
-
 env = gym.make('MountainCar-v0')
 env.reset()
 
@@ -51,6 +45,8 @@ def eps_greedy_action(model, state, epsilon):
     return np.argmax(model(state).detach().numpy())
 
 rewards = []
+replay_buffer = []
+
 criterion = nn.MSELoss()
 optimizer = optim.Adam(train_model.parameters())
 
@@ -60,25 +56,22 @@ for episode in range(episodes):
         epsilon /= 2
 
     state = env.reset()
-    action = eps_greedy_action(policy_model, state, epsilon)
     done = False
 
     episode_reward = 0
 
-    replay_buffer = []
     while not done:
         if episode % 50 == 0:
             env.render()
 
+        # for DQN (or Q learning in general), the actions are off policy
+        action = eps_greedy_action(policy_model, state, epsilon)
         new_state, reward, done, _ = env.step(action)
-        new_action = eps_greedy_action(policy_model, new_state, epsilon)
-
-        td_target = reward + gamma * policy_model(new_state)[new_action]
+        
+        td_target = reward + gamma * torch.max(policy_model(new_state))
         replay_buffer.append((state, action, td_target.detach().numpy()))
 
         state = new_state
-        action = new_action
-
         episode_reward += reward
 
     random.shuffle(replay_buffer)
