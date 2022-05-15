@@ -97,3 +97,34 @@ filtered_pairs = filter_pairs(pairs)
 for pair in filtered_pairs:
     input_lang.add_sentence(pair[0])
     output_lang.add_sentence(pair[1])
+
+class Encoder(nn.Module):
+    def __init__(self, input_size, hidden_size):
+        super(Encoder, self).__init__()
+
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(input_size, self.hidden_size)
+        self.gru = nn.GRU(self.hidden_size, self.hidden_size)
+
+    def forward(self, x, hidden):
+        output = self.embedding(x).view(1, 1, -1)
+        output, hidden = self.gru(output, hidden)
+        return output, hidden
+
+class Decoder(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(Decoder, self).__init__()
+
+        self.hidden_size = hidden_size
+        self.embedding = nn.Embedding(output_size, self.hidden_size)
+        self.gru = nn.GRU(self.hidden_size, self.hidden_size)
+        self.out = nn.Linear(self.hidden_size, output_size)
+        self.softmax = nn.LogSoftmax(dim=1)
+
+    def forward(self, x, hidden):
+        output = self.embedding(x).view(1, 1, -1)
+        output = F.relu(output)
+        output, hidden = self.gru(output, hidden)
+        output = self.out(output[0])
+        output = self.softmax(output)
+        return output, hidden
