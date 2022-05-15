@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.functional as F
 import torch.optim as optim
 
+import random
 import numpy as np
 import re
 import unicodedata
@@ -29,6 +30,8 @@ class Lang():
             EOS_token: "EOS",
         }
 
+        self.n = 2
+
     def add_sentence(self, sentence):
         words = sentence.split()
         for word in words:
@@ -36,11 +39,11 @@ class Lang():
 
     def add_word(self, word):
         if word not in self.word_to_idx:
-            idx = max(self.idx_to_word.keys()) + 1
-            self.word_to_idx[word] = idx
-            self.idx_to_word[idx] = word
+            self.word_to_idx[word] = self.n
+            self.idx_to_word[self.n] = word
             self.word_to_count[word] = 0
-
+            self.n += 1
+            
         self.word_to_count[word] += 1
 
 # Turn a Unicode string to plain ASCII, thanks to
@@ -109,10 +112,10 @@ class Encoder(nn.Module):
     def forward(self, x, hidden):
         output = self.embedding(x).view(1, 1, -1)
         output, hidden = self.gru(output, hidden)
-        return output, hidden
+        return output, hidden # output is used *only* if we have attention
 
 class Decoder(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, hidden_size, output_size):
         super(Decoder, self).__init__()
 
         self.hidden_size = hidden_size
@@ -128,3 +131,60 @@ class Decoder(nn.Module):
         output = self.out(output[0])
         output = self.softmax(output)
         return output, hidden
+
+input_size = input_lang.n
+output_size = output_lang.n
+hidden_size = 128
+epochs = 10
+batch_size = 32
+teacher_forcing_ratio = 0.5
+
+encoder = Encoder(input_size, hidden_size)
+decoder = Encoder(hidden_size, output_size)
+loss_criterion = nn.NLLLoss()
+
+encoder_optim = optim.SGD(encoder.parameters(), lr=0.01)
+decoder_optim = optim.SGD(decoder.parameters(), lr=0.01)
+
+for epoch in range(epochs):
+    training_batch = [random.choice(filtered_pairs) for _ in range(batch_size)]
+    training_batch = [
+        (
+            torch.tensor([SOS_token] + [input_lang.word_to_idx[word]  for word in sentence_pair[0].split()] + [EOS_token]),
+            torch.tensor([SOS_token] + [output_lang.word_to_idx[word] for word in sentence_pair[1].split()] + [EOS_token]),
+        )
+        for sentence_pair in training_batch
+    ]
+
+    for training_pair in training_batch:
+        encoder_optim.zero_grad()
+        decoder_optim.zero_grad()
+
+        loss = 0
+        
+        input_sentence, output_sentence = training_pair
+        
+        hidden_state = torch.zeros(hidden_size)
+        for word in input_sentence:
+            _, hidden_state = encoder(word, hidden_state)
+
+        prev_word = [SOS_token]
+        for word in output_sentence:
+            output, hidden_state = decoder(prev_word, hidden_state)
+            loss += loss_criterion(output, word)
+
+            if random.random() < teacher_forcing_ratio:
+                prev_word = word
+            else:
+                topv, topi = output.topk(1)
+                prev_word = topi.squeeze().detach()
+
+            if prev_word == EOS_token:
+                break
+
+        loss.backward()
+
+        encoder_optim.step()
+        decoder_optim.step()
+
+    print(f"Epoch: {epoch} / {epochs} -- Loss : {loss}")
