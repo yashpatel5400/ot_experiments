@@ -29,66 +29,70 @@ class DQN(nn.Module):
         x = self.d3(x)
         return x
 
-batch_size = 25
-episodes = 1000
-alpha = 0.1
-epsilon = 0.9
-gamma = 0.95
+# batch_size = 25
+# episodes = 1000
+# alpha = 0.1
+# epsilon = 0.9
+# gamma = 0.95
 
-state = env.reset()
-policy_model = DQN()
-train_model = DQN()
+# state = env.reset()
+# policy_model = DQN()
+# train_model = DQN()
 
 def eps_greedy_action(model, state, epsilon):
     if np.random.random() < epsilon:
         return env.action_space.sample()
     return np.argmax(model(state).detach().numpy())
 
-rewards = []
-replay_buffer = []
+# rewards = []
+# replay_buffer = []
 
-criterion = nn.MSELoss()
-optimizer = optim.Adam(train_model.parameters())
+# criterion = nn.MSELoss()
+# optimizer = optim.Adam(train_model.parameters())
 
-for episode in range(episodes):
-    if episode > 0 and episode % 100 == 0:
-        policy_model = copy.deepcopy(train_model)
-        epsilon /= 2
+# for episode in range(episodes):
+#     if episode > 0 and episode % 100 == 0:
+#         policy_model = copy.deepcopy(train_model)
+#         epsilon /= 2
 
-    state = env.reset()
-    done = False
+#     state = env.reset()
+#     done = False
 
-    episode_reward = 0
+#     episode_reward = 0
 
-    while not done:
-        if episode % 50 == 0:
-            env.render()
+#     while not done:
+#         if episode % 50 == 0:
+#             env.render()
 
-        # for DQN (or Q learning in general), the actions are off policy
-        action = eps_greedy_action(policy_model, state, epsilon)
-        new_state, reward, done, _ = env.step(action)
+#         # for DQN (or Q learning in general), the actions are off policy
+#         action = eps_greedy_action(policy_model, state, epsilon)
+#         new_state, reward, done, _ = env.step(action)
         
-        td_target = reward + gamma * torch.max(policy_model(new_state))
-        replay_buffer.append((state, action, td_target.detach().numpy()))
+#         td_target = reward + gamma * torch.max(policy_model(new_state))
+#         replay_buffer.append((state, action, td_target.detach().numpy()))
 
-        state = new_state
-        episode_reward += reward
+#         state = new_state
+#         episode_reward += reward
 
-    random.shuffle(replay_buffer)
-    training_batch = replay_buffer[:batch_size]
-    states, actions, Qs = list(map(list, zip(*training_batch)))
-    states = np.array(states)
-    Qs = torch.from_numpy(np.array(Qs))
+#     random.shuffle(replay_buffer)
+#     training_batch = replay_buffer[:batch_size]
+#     states, actions, Qs = list(map(list, zip(*training_batch)))
+#     states = np.array(states)
+#     Qs = torch.from_numpy(np.array(Qs))
     
-    idxs = torch.from_numpy(np.array(actions)).long().unsqueeze(1)
-    Qhat = train_model(states).gather(1, idxs).squeeze()
+#     idxs = torch.from_numpy(np.array(actions)).long().unsqueeze(1)
+#     Qhat = train_model(states).gather(1, idxs).squeeze()
 
-    optimizer.zero_grad()
-    loss = criterion(Qhat, Qs)
-    loss.backward()
-    optimizer.step()
+#     optimizer.zero_grad()
+#     loss = criterion(Qhat, Qs)
+#     loss.backward()
+#     optimizer.step()
 
-    rewards.append(episode_reward)
+#     rewards.append(episode_reward)
+
+train_model = DQN()
+train_model.load_state_dict(torch.load("trained.pt"))
+train_model.eval()
 
 # final "evaluation" run
 done = False
