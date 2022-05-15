@@ -4,6 +4,7 @@ import numpy as np
 
 class VanillaRNN(nn.Module):
     def __init__(self, D, H):
+        super(VanillaRNN, self).__init__()
         self.Wxh = torch.normal(0, 1, (D, H))
         self.Whh = torch.normal(0, 1, (H, H))
         self.H = H
@@ -24,5 +25,5 @@ H = 15
 
 rnn = VanillaRNN(D, H)
 
-X = torch.zeros((N, T, D))
+X = torch.ones((N, T, D))
 print(rnn(X))
