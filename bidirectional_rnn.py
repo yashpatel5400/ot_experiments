@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-class VanillaRNN(nn.Module):
+class BidirectionalRNN(nn.Module):
     def __init__(self, D, H):
         super(VanillaRNN, self).__init__()
         self.Wxh = torch.normal(0, 1, (D, H))

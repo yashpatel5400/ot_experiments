@@ -3,10 +3,11 @@ import torch.nn as nn
 import numpy as np
 
 class VanillaRNN(nn.Module):
-    def __init__(self, D, H):
+    def __init__(self, D, H, O):
         super(VanillaRNN, self).__init__()
         self.Wxh = torch.normal(0, 1, (D, H))
         self.Whh = torch.normal(0, 1, (H, H))
+        self.Who = torch.normal(0, 1, (H, O))
         self.H = H
 
     def forward(self, x):
@@ -16,7 +17,8 @@ class VanillaRNN(nn.Module):
         for t in range(T):
             x_i = x[:, t, :] # [N, D] vector
             h = torch.matmul(x_i, self.Wxh) + torch.matmul(h, self.Whh)
-        return h
+        y_hat = torch.matmul(h, self.Who)
+        return y_hat
 
 N = 1
 T = 10
