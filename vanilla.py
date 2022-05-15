@@ -24,8 +24,9 @@ N = 1
 T = 10
 D = 20
 H = 15
+O = 15
 
-rnn = VanillaRNN(D, H)
+rnn = VanillaRNN(D, H, O)
 
 X = torch.ones((N, T, D))
 print(rnn(X))
